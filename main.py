@@ -84,6 +84,10 @@ def check_parting(line):
     return False
 
 
+def check_manager_responsibilities():
+    pass
+
+
 def main():
     with open(FILE_NAME, 'r', encoding='utf8') as csv_file, temp_file:
         reader = csv.reader(csv_file)
@@ -94,8 +98,11 @@ def main():
                                    'text': 'text', 'insights': 'insights'}
         writer.writerow(headers_row)
         dlg_data = {}
+        dialogues = {}
 
         for dlg_id, line_n, speaker, fraze in reader:
+            if dlg_id not in dialogues:
+                dialogues[dlg_id] = {'greeting': False, 'parting': False}
             updated_row = {'dlg_id': dlg_id, 'line_n': line_n, 'role': speaker,
                            'text': fraze, 'insights': []}
             if speaker == 'manager':
@@ -110,6 +117,8 @@ def main():
                     print(f'Приветствия: {check_greeting(fraze)}, диалог {dlg_id}, строка {line_n}')
                     dlg_data[f'{dlg_id}:{line_n}']['greeting'] = check_greeting(fraze)
                     updated_row['insights'].append(f'greeting:{check_greeting(fraze)}')
+                    if not dialogues[dlg_id]['greeting']:
+                        dialogues[dlg_id]['greeting'] = True
                 if check_manager_name_present(fraze):
                     print(f'Диалог {dlg_id}, строка {line_n}, менеджер представился?: {check_manager_name_present(fraze)}')
                     dlg_data[f'{dlg_id}:{line_n}']['name_present'] = check_manager_name_present(fraze)
@@ -126,6 +135,8 @@ def main():
                     print(f'Прощания: {check_parting(fraze)}, диалог {dlg_id}, строка {line_n}')
                     dlg_data[f'{dlg_id}:{line_n}']['parting'] = check_parting(fraze)
                     updated_row['insights'].append(f'parting:{check_parting(fraze)}')
+                    if not dialogues[dlg_id]['parting']:
+                        dialogues[dlg_id]['parting'] = True
                 print()
             else:
                 updated_row['insights'].append('')
@@ -133,6 +144,13 @@ def main():
 
     with open(NEW_FILE, mode='w', encoding='utf8', newline=""):
         shutil.move(temp_file.name, NEW_FILE)
+
+    print(dialogues)
+    for dialogue in dialogues:
+        if all([dialogues[dialogue]['greeting'], dialogues[dialogue]['parting']]):
+            print(f'В диалоге {dialogue} менеджер поздоровался и попрощался')
+        else:
+            print(f'В диалоге {dialogue} менеджер не выполнил обязанности')
 
     print(dlg_data)
     return dlg_data
